@@ -1,68 +1,88 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+##建立四个文件夹
+	components文件夹用于存放UI组件(不使用redux API)，
+	containers文件夹用于存放容器组件(使用redux API),
+	redux文件夹用于存储管理文件，管理应用state,
+	views文件夹用于存放路由组件
+##下载依赖
+	npm i --save react-router-dom
+	npm i --save redux
+	npm i --save react-redux
+	npm i --save redux-thunk  (中间件，用于实现redux异步操作，redux本身是不支持异步的)
 
-## Available Scripts
+##开始实现：
+	1.拆分组件
 
-In the project directory, you can run:
+	2.静态页面
 
-### `npm start`
+	3.初始化动态显示
 
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+	4.交互
 
-The page will reload if you make edits.<br>
-You will also see any lint errors in the console.
+##redux中的四个文件都是有存在价值的
+	action-types : 行为类型
+	actions: 返回一个action对象，表明将要做出什么样的行为，同时还传入数据
+	reducers: 将行动变为现实，输入旧的state，返回一个新的state
+	store：存储state
 
-### `npm test`
+##react与redux之间的交互包括两个方面：
+###不使用react-redux插件时：
+	1.更新页面(redux -> react)：加设监听，每当store中存储的state发生改变，就重新渲染页面，更新内容
+			`store.subscribe(
+				ReactDOM.render(<App store={store} />, document.getElementById('root'))
+			)`
+		因为store作为App组件的传入属性,所以可以通过this.props.store.getState()来获取状态
 
-Launches the test runner in the interactive watch mode.<br>
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+	2.更新状态(react -> redux)：当react中想要改变状态时，会触发dispatch方法派遣行为(action),
+			action会自动被reducer调用，reducer返回的新状态被存储到store中，而subscribe会监听到store
+			的变化，从而出发页面更新
+			this.props.store.dispatch(action)
+			action是行为函数，根据传入的数据，返回一个行为对象，包含行为类型和数据
 
-### `npm run build`
+###使用react-redux插件时：
+	1.更新页面(redux -> react): 
+			使用Provider标签包裹组件
+			`import {Provider} from 'react-redux'
+			ReactDOM.render(
+			<Provider store={store}>
+				<App />
+			</Provider>, document.getElementById('root'))
 
-Builds the app for production to the `build` folder.<br>
-It correctly bundles React in production mode and optimizes the build for the best performance.
+			//新建container文件
+			import {connect} from 'react-redux'
+			import App from 'app.jsx'
 
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
+			const mapStateToProps = (state) => {
+				return {
+					data: state
+				}
+			} 
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+			const mapDispatchToProps = (dispatch) => {
+				return {
+					onAddClick: (data) => {
+						dispatch(action)
+					}
+				}
+			}
 
-### `npm run eject`
+			connect(
+				mapStateToProps,
+				mapDispatchToProps   // 将派遣行为这一步骤封装成函数onAddClick再传给组件
+		      //	{action}  也可以直接将action传给组件然后在组件里面再进行this.props.action操作
+			)(App)`
+			将data, onClick传入到App的props中，直接用{data, onAddClick} = this.props就行了
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `npm run build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+	2.更新状态
+			react中会触发事件来改变状态，实质就是派遣action，比如：
+			`<input type="text" ref={input => this.input = input} />
+			<button onClick={this.add}>Add</button>`
+			触发这个点击事件，让组建调用add函数
+			add = () => {
+				const count = this.input.value;
+				onAddClick(count)
+				//或者
+				this.props.action(count)  //不需要dispatch
+			}`
+			将count值传给action，这个action的type已经在创建onAddClick函数时设定好了，
+			一次来实现功能
+			总而言之，react中各种函数的出发目的就是给action传值
